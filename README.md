@@ -125,8 +125,8 @@ C:\Users\User\AppData\Local\Google\Chrome\User Data\Profile 1
 ### 1. Clone atau Download Project
 
 ```bash
-git clone https://github.com/username/Chrome-Multi.git
-cd Chrome-Multi
+git clone https://github.com/IhsanBaihaqii/Chrome-Multiple-Account
+cd Chrome-Multiple-Account
 ```
 
 ### 2. Install Dependencies
