@@ -1,132 +1,32 @@
-# Chrome Multi Account Launcher
+# 🚀 Chrome Multi-Account Remote Launcher
 
-Aplikasi berbasis **Node.js** untuk membuka beberapa profil Google Chrome secara bersamaan menuju URL yang sama dengan sesi akun berbeda.
-
----
-
-## 📋 Daftar Isi
-
-- [Fitur](#-fitur)
-- [Persyaratan Sistem](#-persyaratan-sistem)
-- [Struktur Project](#-struktur-project)
-- [Persiapan Chrome Profile](#-persiapan-chrome-profile)
-- [Instalasi](#-instalasi)
-- [Menjalankan Aplikasi](#-menjalankan-aplikasi)
-- [Cara Penggunaan](#-cara-penggunaan)
-- [Contoh Kasus](#-contoh-kasus)
-- [Troubleshooting](#-troubleshooting)
-- [Pengembangan Selanjutnya](#-pengembangan-selanjutnya)
-- [Lisensi](#-lisensi)
-
----
+Aplikasi untuk membuka multiple akun Chrome secara remote dari satu perangkat ke perangkat lainnya. Cocok untuk keperluan automation, testing, atau manajemen multiple account di berbagai platform (TikTok, Instagram, dll).
 
 ## ✨ Fitur
 
-- Buka beberapa profil Chrome sekaligus
-- Setiap profil memiliki sesi/cookie terpisah
-- Dukungan untuk semua website (TikTok, YouTube, Gmail, dll)
-- Antarmuka web sederhana
-- Mudah dikustomisasi
+- **Remote Control**: Kontrol perangkat lain dari jarak jauh
+- **Multi-Account**: Buka beberapa profile Chrome sekaligus
+- **Dual Mode**: Bisa berfungsi sebagai Controller atau Worker
+- **Real-time Status**: Pantau status perangkat secara live
+- **Simple UI**: Antarmuka yang mudah digunakan
+- **Cross-Platform**: Bekerja di Windows, Linux, dan MacOS
 
----
+## 📋 Prasyarat
 
-## 🖥️ Persyaratan Sistem
+- [Node.js](https://nodejs.org/) (v14 atau lebih baru)
+- [Google Chrome](https://www.google.com/chrome/) terinstall
+- Koneksi jaringan lokal (LAN) antar perangkat
 
-Pastikan komputer Anda telah terinstall:
+## 🛠️ Instalasi
 
-| Komponen                       | Minimal Versi           |
-| ------------------------------ | ----------------------- |
-| [Node.js](https://nodejs.org/) | v14.x atau lebih baru   |
-| npm                            | v6.x atau lebih baru    |
-| Google Chrome                  | Versi terbaru           |
-| Sistem Operasi                 | Windows / macOS / Linux |
-
-**Cek versi terinstall:**
+### 1. Clone atau Download
 
 ```bash
-node -v
-npm -v
-```
-
----
-
-## 📁 Struktur Project
-
-```
-Chrome-Multi/
-│
-├── package.json          # Daftar dependency
-├── package-lock.json     # Lock file dependency
-├── server.js             # Server utama
-│
-├── public/               # Asset frontend
-│   ├── index.html        # Halaman utama
-│   ├── style.css         # Styling
-│   └── script.js         # Logic client-side
-│
-└── README.md             # Dokumentasi
-```
-
----
-
-## 🔧 Persiapan Chrome Profile
-
-Aplikasi ini memanfaatkan profil Chrome yang sudah ada. Setiap profil harus sudah **login** dengan akun yang diinginkan.
-
-### 1. Buat Profil Chrome
-
-Buka Chrome dan buat beberapa profil, misalnya:
-
-```
-Default
-Profile 1
-Profile 2
-Profile 3
-```
-
-### 2. Login ke Akun
-
-Login ke akun yang diinginkan di setiap profil:
-
-```
-Default    → akun1@gmail.com  → TikTok Akun A
-Profile 1  → akun2@gmail.com  → TikTok Akun B
-Profile 2  → akun3@gmail.com  → TikTok Akun C
-```
-
-> **Catatan:** Login hanya perlu dilakukan **satu kali** agar sesi tersimpan.
-
----
-
-## 🔍 Mengetahui Nama Profil Chrome
-
-1. Buka Chrome dengan profil yang ingin diperiksa
-2. Akses `chrome://version`
-3. Cari bagian **Profile Path**
-
-Contoh:
-
-```
-C:\Users\User\AppData\Local\Google\Chrome\User Data\Default
-```
-
-→ Nama profil: `Default`
-
-```
-C:\Users\User\AppData\Local\Google\Chrome\User Data\Profile 1
-```
-
-→ Nama profil: `Profile 1`
-
----
-
-## ⚙️ Instalasi
-
-### 1. Clone atau Download Project
-
-```bash
-git clone https://github.com/IhsanBaihaqii/Chrome-Multiple-Account
+# Clone repository
+git clone https://github.com/IhsanBaihaqii/Chrome-Multiple-Account.git
 cd Chrome-Multiple-Account
+
+# Atau download ZIP dan extract
 ```
 
 ### 2. Install Dependencies
@@ -135,185 +35,175 @@ cd Chrome-Multiple-Account
 npm install
 ```
 
-### 3. (Opsional) Install Express secara manual
+### 3. Jalankan Aplikasi
 
 ```bash
-npm install express
+npm start
+# atau untuk development dengan auto-reload
+npm run dev
 ```
 
----
+Akses aplikasi di: `http://localhost:3000`
 
-## 🚀 Menjalankan Aplikasi
+atau untuk menjalankan dengan dengan 1 jaringan yang sama `http://ipconfig_kamu:3000` didapatkan pada terminal IP Anda saat menjalankan `npm run dev` dan gunakan port `:3000`
 
-### Jalankan server:
+## 📱 Cara Penggunaan
+
+### Mode Controller (Pengontrol)
+
+1. Buka aplikasi di perangkat yang akan menjadi pengontrol
+2. Klik tombol **"Controller"** di bagian atas
+3. Masukkan **IP Address** perangkat worker
+4. Isi **jumlah akun** yang ingin dibuka
+5. Masukkan **URL tujuan** (contoh: https://www.tiktok.com)
+6. Klik **"Kirim Perintah"**
+
+### Mode Worker (Yang Dikontrol)
+
+1. Buka aplikasi di perangkat yang akan dikontrol
+2. Klik tombol **"Worker"** di bagian atas
+3. Status akan berubah menjadi "Mode Worker aktif"
+4. Tunggu perintah dari controller
+
+## 🌐 Mengetahui IP Address
+
+### Windows
 
 ```bash
-node server.js
+ipconfig
+# Cari "IPv4 Address" pada adapter yang aktif
 ```
 
-Jika berhasil, akan muncul:
-
-```
-Server berjalan di http://localhost:3000
-```
-
-### Buka di browser:
-
-```
-http://localhost:3000
-```
-
----
-
-## 🎮 Cara Penggunaan
-
-1. Masukkan **jumlah profil** yang ingin dibuka
-2. Masukkan **URL tujuan**
-3. Klik tombol **Buka Semua**
-
-Contoh input:
-
-```
-Jumlah akun: 3
-URL tujuan: https://www.tiktok.com
-```
-
-### Hasil:
-
-```
-Chrome Default    → https://www.tiktok.com
-Chrome Profile 1  → https://www.tiktok.com
-Chrome Profile 2  → https://www.tiktok.com
-```
-
----
-
-## 📌 Contoh Kasus
-
-### TikTok
-
-Jika profil sudah disiapkan:
-
-```
-Default    → TikTok Akun A
-Profile 1  → TikTok Akun B
-Profile 2  → TikTok Akun C
-```
-
-Maka hasilnya:
-
-```
-Chrome Default    → TikTok Akun A
-Chrome Profile 1  → TikTok Akun B
-Chrome Profile 2  → TikTok Akun C
-```
-
-### YouTube
-
-```
-Jumlah akun: 3
-URL: https://www.youtube.com
-```
-
-### Gmail
-
-```
-Jumlah akun: 3
-URL: https://mail.google.com
-```
-
----
-
-## ⚠️ Troubleshooting
-
-### Chrome Tidak Ditemukan
-
-Jika muncul error `ENOENT` atau `Google Chrome tidak ditemukan`:
-
-**Lokasi Chrome di Windows:**
-
-```
-C:\Program Files\Google\Chrome\Application\chrome.exe
-C:\Program Files (x86)\Google\Chrome\Application\chrome.exe
-C:\Users\%USERNAME%\AppData\Local\Google\Chrome\Application\chrome.exe
-```
-
-**Lokasi Chrome di macOS:**
-
-```
-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
-```
-
-**Lokasi Chrome di Linux:**
-
-```
-/usr/bin/google-chrome
-/usr/bin/chromium-browser
-```
-
-Periksa dan sesuaikan path di `server.js` jika diperlukan.
-
-### Server Tidak Berjalan
-
-- Pastikan port `3000` tidak digunakan aplikasi lain
-- Coba jalankan dengan port berbeda: `node server.js --port=3001`
-
-### Profil Tidak Terbuka
-
-- Pastikan nama profil sesuai dengan yang ada di `chrome://version`
-- Periksa kembali path profil di `server.js`
-
----
-
-## 🔄 Menghentikan Server
-
-Di terminal tempat server berjalan, tekan:
-
-```
-CTRL + C
-```
-
-Untuk menjalankan kembali:
+### Linux / MacOS
 
 ```bash
-node server.js
+ifconfig
+# atau
+ip addr show
+# Cari "inet" pada interface yang aktif (biasanya eth0 atau wlan0)
 ```
 
----
+## 📁 Struktur File
 
-## 🚧 Pengembangan Selanjutnya
+```
+Chrome-Multi-Remote/
+│
+├── package.json          # Daftar dependency
+├── package-lock.json     # Lock file dependency
+├── server.js             # Server utama
+├── config.json           # Konfigurasi otomatis
+│
+├── public/               # Asset frontend
+│   ├── index.html        # Halaman utama
+│   ├── style.css         # Styling
+│   └── script.js         # Logic client-side
+│
+└── README.md             # Dokumentasi ini
+```
 
-Fitur yang dapat ditambahkan:
+## ⚙️ Konfigurasi
 
-- [ ] Deteksi profil Chrome secara otomatis
-- [ ] Memilih profil tertentu
-- [ ] Menampilkan nama akun yang sedang login
-- [ ] Menyimpan URL favorit (TikTok, YouTube, Gmail, Instagram)
-- [ ] Tombol pintasan untuk website populer
-- [ ] Menampilkan jumlah profil yang tersedia
-- [ ] Menyimpan konfigurasi profil
-- [ ] Membuat aplikasi desktop dengan Electron
-- [ ] Auto-start server tanpa mengetik `node server.js`
+File `config.json` akan dibuat otomatis saat pertama kali dijalankan:
 
----
+```json
+{
+  "mode": "controller",
+  "controllerIP": "",
+  "deviceName": "NAMA-COMPUTER-ANDA"
+}
+```
 
-## 🛠️ Teknologi
+### Manual Configuration
 
-- [Node.js](https://nodejs.org/) - Runtime JavaScript
-- [Express.js](https://expressjs.com/) - Framework web
-- HTML, CSS, JavaScript - Frontend
-- Google Chrome - Browser target
+Anda juga bisa mengubah mode melalui API:
 
----
+```bash
+# Mengubah ke mode worker
+curl -X POST http://localhost:3000/config \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"worker"}'
 
-## 📄 Lisensi
+# Mengubah ke mode controller
+curl -X POST http://localhost:3000/config \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"controller"}'
+```
 
-Project ini bersifat open-source. Silakan gunakan, modifikasi, dan distribusikan sesuai kebutuhan.
+## 🔧 API Endpoints
 
----
+| Endpoint   | Method | Deskripsi                                  |
+| ---------- | ------ | ------------------------------------------ |
+| `/execute` | POST   | Menerima perintah dari controller (worker) |
+| `/control` | POST   | Mengirim perintah ke worker (controller)   |
+| `/status`  | GET    | Mendapatkan status perangkat               |
+| `/config`  | POST   | Update konfigurasi                         |
 
-## 📝 Catatan Penting
+### Contoh Request
 
-⚠️ Aplikasi ini **tidak melakukan login otomatis**. Pastikan setiap profil Chrome sudah login ke akun yang diinginkan sebelum digunakan.
+**Kirim perintah ke worker:**
 
-Aplikasi hanya membuka profil yang sudah ada dengan sesi yang tersimpan.
+```json
+POST /control
+{
+  "jumlah": 3,
+  "url": "https://www.tiktok.com",
+  "workerIP": "192.168.1.100"
+}
+```
+
+**Worker menerima perintah:**
+
+```json
+POST /execute
+{
+  "jumlah": 3,
+  "url": "https://www.tiktok.com"
+}
+```
+
+## 🖥️ Contoh Penggunaan
+
+### Skenario 1: Testing Multi-Account di TikTok
+
+1. **Perangkat A (Controller)**: Setup di ruangan server
+2. **Perangkat B (Worker)**: Setup di ruangan testing
+3. Dari Perangkat A, kirim perintah untuk membuka 5 account TikTok
+4. Perangkat B akan otomatis membuka 5 window Chrome dengan profile berbeda
+
+### Skenario 2: Manajemen Social Media
+
+1. **Tim Marketing**: Mengontrol dari laptop utama
+2. **Worker Devices**: 3 komputer di ruangan berbeda
+3. Kirim perintah ke semua worker untuk membuka Instagram
+4. Setiap worker membuka akun yang sudah di-setup sebelumnya
+
+## 🐛 Troubleshooting
+
+### Chrome tidak ditemukan
+
+**Solusi**: Pastikan Chrome terinstall di path default:
+
+- Windows: `C:\Program Files\Google\Chrome\Application\chrome.exe`
+- Linux: `/usr/bin/google-chrome`
+- MacOS: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+
+### Tidak bisa terhubung ke worker
+
+**Solusi**:
+
+1. Pastikan kedua perangkat dalam jaringan yang sama
+2. Matikan firewall sementara untuk testing
+3. Cek IP address worker benar
+4. Pastikan server worker berjalan (npm start)
+
+### Port 3000 sudah digunakan
+
+**Solusi**: Ganti port dengan environment variable:
+
+```bash
+PORT=3001 npm start
+```
+
+## 🤝 Kontribusi
+
+Pull request sangat diterima! Untuk perubahan besar, silakan buka issue terlebih dahulu untuk diskusi.
