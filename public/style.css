@@ -5,23 +5,16 @@
 body {
   margin: 0;
   padding: 40px;
-
   font-family: Arial, sans-serif;
-
   background: #f5f7fa;
 }
 
 .container {
-  width: 400px;
-
+  max-width: 500px;
   margin: auto;
-
   padding: 25px;
-
   background: white;
-
   border-radius: 12px;
-
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
@@ -30,53 +23,114 @@ h2 {
   text-align: center;
 }
 
+/* Mode Selector */
+.mode-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 7px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.mode-btn.active {
+  border-color: #4285f4;
+  background: #e8f0fe;
+  color: #4285f4;
+  font-weight: bold;
+}
+
+.mode-btn:hover {
+  background: #f0f0f0;
+}
+
+/* Form */
 .form-group {
   margin-bottom: 18px;
 }
 
 label {
   display: block;
-
   margin-bottom: 7px;
-
   font-weight: bold;
 }
 
 input {
   width: 100%;
-
   padding: 12px;
-
   border: 1px solid #ccc;
-
   border-radius: 7px;
-
   font-size: 14px;
+}
+
+small {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-size: 12px;
 }
 
 button {
   width: 100%;
-
   padding: 12px;
-
   border: none;
-
   border-radius: 7px;
-
   background: #4285f4;
-
   color: white;
-
   font-size: 15px;
-
   cursor: pointer;
+  transition: background 0.3s;
 }
 
 button:hover {
   background: #3367d6;
 }
 
-#message {
-  text-align: center;
+/* Status Box */
+.status-box {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 7px;
+  margin-bottom: 15px;
+}
+
+.status-box h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.status-box p {
+  margin: 5px 0;
+  color: #333;
+}
+
+/* Message & Log */
+.message {
   margin-top: 15px;
+  padding: 10px;
+  border-radius: 7px;
+  text-align: center;
+}
+
+.log {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 7px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.log div {
+  padding: 3px 0;
+  border-bottom: 1px solid #eee;
 }

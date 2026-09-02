@@ -2,30 +2,53 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <title>Multi Account Launcher</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi Account Launcher - Remote Control</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-
   <body>
     <div class="container">
-      <h2>Multi Account Launcher</h2>
+      <h2>🎮 Multi Account Launcher</h2>
 
-      <div class="form-group">
-        <label>Jumlah akun</label>
-
-        <input type="number" id="jumlah" min="1" placeholder="Contoh: 3" />
+      <div class="mode-selector">
+        <button id="controllerMode" class="mode-btn active">
+          🎯 Controller
+        </button>
+        <button id="workerMode" class="mode-btn">⚙️ Worker</button>
       </div>
 
-      <div class="form-group">
-        <label>URL tujuan</label>
+      <!-- MODE CONTROLLER -->
+      <div id="controllerPanel">
+        <div class="form-group">
+          <label>IP Worker (Perangkat yang dikontrol)</label>
+          <input type="text" id="workerIP" placeholder="192.168.1.100" />
+          <small>Masukkan IP perangkat worker</small>
+        </div>
 
-        <input type="text" id="url" placeholder="https://www.tiktok.com" />
+        <div class="form-group">
+          <label>Jumlah akun</label>
+          <input type="number" id="jumlah" min="1" placeholder="Contoh: 3" />
+        </div>
+
+        <div class="form-group">
+          <label>URL tujuan</label>
+          <input type="text" id="url" placeholder="https://www.tiktok.com" />
+        </div>
+
+        <button id="openBtn">🚀 Kirim Perintah</button>
       </div>
 
-      <button id="openBtn">Buka Semua</button>
+      <!-- MODE WORKER -->
+      <div id="workerPanel" style="display: none">
+        <div class="status-box">
+          <h3>⚙️ Status Worker</h3>
+          <p id="workerStatus">Menunggu perintah...</p>
+          <p id="deviceInfo"></p>
+        </div>
+      </div>
 
-      <p id="message"></p>
+      <div id="message" class="message"></div>
+      <div id="log" class="log"></div>
     </div>
 
     <script src="script.js"></script>
