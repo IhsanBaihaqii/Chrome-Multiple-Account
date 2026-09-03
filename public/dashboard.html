@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Multi Account Launcher</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Header -->
+      <div class="dashboard-header">
+        <div class="header-left">
+          <h1>🎮 Dashboard</h1>
+          <span class="device-info"
+            >Controller: <span id="controllerName">Loading...</span></span
+          >
+        </div>
+        <div class="header-right">
+          <button id="logoutBtn" class="btn-logout">🚪 Logout</button>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="dashboard-content">
+        <!-- Device List -->
+        <div class="device-section">
+          <div class="section-header">
+            <h2>📱 Perangkat Tersedia</h2>
+            <div class="select-actions">
+              <label class="checkbox-label">
+                <input type="checkbox" id="selectAll" />
+                <span>Select All</span>
+              </label>
+              <span id="selectedCount" class="selected-count"
+                >0 perangkat dipilih</span
+              >
+            </div>
+          </div>
+
+          <div id="deviceList" class="device-list">
+            <div class="loading">Memuat daftar perangkat...</div>
+          </div>
+        </div>
+
+        <!-- Command Section -->
+        <div class="command-section">
+          <div class="section-header">
+            <h2>⚡ Kirim Perintah</h2>
+          </div>
+
+          <div class="command-form">
+            <div class="form-group">
+              <label for="jumlahAkun">Jumlah Akun</label>
+              <input
+                type="number"
+                id="jumlahAkun"
+                min="1"
+                placeholder="Contoh: 3"
+                value="2"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="targetUrl">URL Tujuan</label>
+              <input
+                type="text"
+                id="targetUrl"
+                placeholder="https://www.tiktok.com"
+                value="https://www.tiktok.com"
+              />
+            </div>
+
+            <button id="executeBtn" class="btn-execute">
+              🚀 Kirim Perintah
+            </button>
+          </div>
+
+          <!-- Results -->
+          <div
+            id="resultContainer"
+            class="result-container"
+            style="display: none"
+          >
+            <h3>📊 Hasil Eksekusi</h3>
+            <div id="resultSummary" class="result-summary"></div>
+            <div id="resultDetail" class="result-detail"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Notification -->
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="dashboard.js"></script>
+  </body>
+</html>
