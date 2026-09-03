@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const { spawn } = require("child_process");
 const path = require("path");
@@ -13,12 +12,21 @@ app.use(express.json());
 app.use(express.static("public"));
 
 // ========================================
-// KONFIGURASI
+// DATA STATIS
+// ========================================
+const VALID_USERNAME = "admin";
+const VALID_PASSWORD = "admin123";
+
+// Daftar perangkat worker (akan diisi otomatis dari worker yang terdaftar)
+let registeredWorkers = [];
+
+// ========================================
+// KONFIGURASI PERANGKAT
 // ========================================
 let config = {
-  mode: "worker", // 'controller' atau 'worker'
-  controllerIP: "", // IP controller jika mode worker
+  mode: "controller", // default controller
   deviceName: os.hostname(),
+  registeredWorkers: [],
 };
 
 // Load config jika ada
@@ -26,6 +34,7 @@ try {
   if (fs.existsSync("config.json")) {
     const savedConfig = JSON.parse(fs.readFileSync("config.json", "utf8"));
     config = { ...config, ...savedConfig };
+    registeredWorkers = config.registeredWorkers || [];
   }
 } catch (err) {
   console.log("Config tidak ditemukan, menggunakan default");
@@ -47,9 +56,14 @@ function findChrome() {
     ),
   ];
 
-  // Linux
   if (process.platform === "linux") {
     possiblePaths.push("/usr/bin/google-chrome", "/usr/bin/chromium-browser");
+  }
+
+  if (process.platform === "darwin") {
+    possiblePaths.push(
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    );
   }
 
   for (const chromePath of possiblePaths) {
@@ -61,12 +75,78 @@ function findChrome() {
 }
 
 // ========================================
+// ENDPOINT LOGIN
+// ========================================
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+    res.json({
+      success: true,
+      message: "Login berhasil",
+      redirect: "/dashboard.html",
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: "Username atau password salah",
+    });
+  }
+});
+
+// ========================================
+// ENDPOINT UNTUK WORKER REGISTER
+// ========================================
+app.post("/register", (req, res) => {
+  const { ip, name } = req.body;
+
+  if (!ip || !name) {
+    return res.status(400).json({
+      success: false,
+      message: "IP dan nama perangkat wajib diisi",
+    });
+  }
+
+  // Cek apakah sudah terdaftar
+  const existing = registeredWorkers.find((w) => w.ip === ip);
+  if (!existing) {
+    registeredWorkers.push({
+      id: Date.now().toString(),
+      name: name,
+      ip: ip,
+      status: "online",
+      lastSeen: new Date().toISOString(),
+    });
+    saveConfig();
+  } else {
+    existing.status = "online";
+    existing.lastSeen = new Date().toISOString();
+    saveConfig();
+  }
+
+  res.json({
+    success: true,
+    message: "Worker berhasil terdaftar",
+    workers: registeredWorkers,
+  });
+});
+
+// ========================================
+// ENDPOINT GET WORKERS
+// ========================================
+app.get("/workers", (req, res) => {
+  res.json({
+    success: true,
+    workers: registeredWorkers,
+  });
+});
+
+// ========================================
 // ENDPOINT UNTUK WORKER (MENERIMA PERINTAH)
 // ========================================
 app.post("/execute", (req, res) => {
   const { jumlah, url } = req.body;
 
-  // Validasi
   if (!jumlah || !url) {
     return res.status(400).json({
       success: false,
@@ -74,7 +154,6 @@ app.post("/execute", (req, res) => {
     });
   }
 
-  // Cari Chrome
   const chromePath = findChrome();
   if (!chromePath) {
     return res.status(500).json({
@@ -87,7 +166,6 @@ app.post("/execute", (req, res) => {
     `[${config.deviceName}] Menerima perintah: ${jumlah} profile → ${url}`,
   );
 
-  // Buka profile
   const openedProfiles = [];
   for (let i = 0; i < jumlah; i++) {
     const profile = i === 0 ? "Default" : `Profile ${i}`;
@@ -121,80 +199,94 @@ app.post("/execute", (req, res) => {
 // ENDPOINT UNTUK KONTROL (MENGIRIM PERINTAH KE WORKER)
 // ========================================
 app.post("/control", async (req, res) => {
-  const { jumlah, url, workerIP } = req.body;
+  const { jumlah, url, workers } = req.body;
 
-  if (!jumlah || !url || !workerIP) {
+  if (!jumlah || !url || !workers || workers.length === 0) {
     return res.status(400).json({
       success: false,
-      message: "Jumlah, URL, dan IP Worker wajib diisi.",
+      message: "Jumlah, URL, dan minimal 1 worker wajib diisi.",
     });
   }
 
-  try {
-    // Kirim perintah ke worker
-    const response = await fetch(`http://${workerIP}:${PORT}/execute`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jumlah, url }),
-    });
+  const results = [];
+  const errors = [];
 
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error("Error mengirim perintah:", error);
-    res.status(500).json({
-      success: false,
-      message: `Gagal terhubung ke worker di ${workerIP}:${PORT}`,
-      error: error.message,
-    });
+  for (const worker of workers) {
+    try {
+      const response = await fetch(`http://${worker.ip}:${PORT}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jumlah, url }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        results.push({
+          worker: worker.name,
+          ip: worker.ip,
+          status: "success",
+          message: data.message,
+        });
+      } else {
+        errors.push({
+          worker: worker.name,
+          ip: worker.ip,
+          status: "error",
+          message: data.message || "Gagal menjalankan perintah",
+        });
+      }
+    } catch (error) {
+      errors.push({
+        worker: worker.name,
+        ip: worker.ip,
+        status: "error",
+        message: `Tidak dapat terhubung: ${error.message}`,
+      });
+    }
   }
-});
-
-// ========================================
-// ENDPOINT UNTUK CEK STATUS
-// ========================================
-app.get("/status", (req, res) => {
-  res.json({
-    device: config.deviceName,
-    mode: config.mode,
-    platform: process.platform,
-    chrome: findChrome() ? "Tersedia" : "Tidak ditemukan",
-    workerIP: config.controllerIP || "Tidak diset",
-  });
-});
-
-// ========================================
-// ENDPOINT UNTUK UPDATE KONFIGURASI
-// ========================================
-app.post("/config", (req, res) => {
-  const { mode, controllerIP } = req.body;
-
-  if (mode) config.mode = mode;
-  if (controllerIP) config.controllerIP = controllerIP;
-
-  // Simpan konfigurasi
-  fs.writeFileSync("config.json", JSON.stringify(config, null, 2));
 
   res.json({
     success: true,
-    message: "Konfigurasi diperbarui",
-    config,
+    total: workers.length,
+    success_count: results.length,
+    error_count: errors.length,
+    results: results,
+    errors: errors,
   });
 });
 
 // ========================================
-// START SERVER
+// ENDPOINT UNTUK UPDATE STATUS WORKER
 // ========================================
-app.listen(PORT, () => {
-  console.log(`✅ Server berjalan di http://localhost:${PORT}`);
-  console.log(`📱 Nama perangkat: ${config.deviceName}`);
-  console.log(`🔧 Mode: ${config.mode}`);
-  console.log(`🌐 IP Anda:`, getLocalIPs());
+app.post("/worker/status", (req, res) => {
+  const { ip, status } = req.body;
+
+  const worker = registeredWorkers.find((w) => w.ip === ip);
+  if (worker) {
+    worker.status = status || "online";
+    worker.lastSeen = new Date().toISOString();
+    saveConfig();
+  }
+
+  res.json({ success: true });
+});
+
+// ========================================
+// ENDPOINT UNTUK LOGOUT
+// ========================================
+app.post("/logout", (req, res) => {
+  res.json({ success: true, message: "Logout berhasil" });
 });
 
 // ========================================
 // FUNGSI BANTUAN
 // ========================================
+function saveConfig() {
+  config.registeredWorkers = registeredWorkers;
+  fs.writeFileSync("config.json", JSON.stringify(config, null, 2));
+}
+
 function getLocalIPs() {
   const interfaces = os.networkInterfaces();
   const ips = [];
@@ -207,3 +299,13 @@ function getLocalIPs() {
   }
   return ips;
 }
+
+// ========================================
+// START SERVER
+// ========================================
+app.listen(PORT, () => {
+  console.log(`✅ Server berjalan di http://localhost:${PORT}`);
+  console.log(`📱 Nama perangkat: ${config.deviceName}`);
+  console.log(`🌐 IP Anda:`, getLocalIPs());
+  console.log(`👥 Worker terdaftar: ${registeredWorkers.length}`);
+});
