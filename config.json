@@ -1,5 +1,6 @@
 {
   "mode": "controller",
+  "deviceName": "LAPTOP-HLIO8FRC",
   "controllerIP": "",
-  "deviceName": "LAPTOP-HLIO8FRC"
+  "discoveredWorkers": []
 }

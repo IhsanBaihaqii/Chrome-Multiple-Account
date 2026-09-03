@@ -1,11 +1,31 @@
 // ========================================
 // LOGIN LOGIC
 // ========================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const loginForm = document.getElementById("loginForm");
   const usernameInput = document.getElementById("username");
   const passwordInput = document.getElementById("password");
   const loginMessage = document.getElementById("loginMessage");
+
+  // Cek status perangkat
+  try {
+    const response = await fetch("/status");
+    const data = await response.json();
+
+    // Update mode badge
+    const modeBadge = document.querySelector(".mode-badge");
+    if (modeBadge) {
+      if (data.mode === "controller") {
+        modeBadge.textContent = "🎮 Mode: Controller";
+        modeBadge.className = "mode-badge controller";
+      } else {
+        modeBadge.textContent = "⚙️ Mode: Worker";
+        modeBadge.className = "mode-badge worker";
+      }
+    }
+  } catch (error) {
+    console.error("Error getting status:", error);
+  }
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -36,7 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (data.success) {
-        loginMessage.textContent = "✅ Login berhasil, mengalihkan...";
+        loginMessage.textContent =
+          "✅ Login berhasil! Mode berubah menjadi CONTROLLER";
         loginMessage.className = "login-message success";
 
         // Redirect ke dashboard

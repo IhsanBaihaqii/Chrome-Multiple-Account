@@ -3,6 +3,8 @@
 // ========================================
 let workers = [];
 let selectedWorkers = [];
+let isLoggedIn = false;
+let currentMode = "worker";
 
 // DOM Elements
 const deviceList = document.getElementById("deviceList");
@@ -16,6 +18,83 @@ const resultSummary = document.getElementById("resultSummary");
 const resultDetail = document.getElementById("resultDetail");
 const logoutBtn = document.getElementById("logoutBtn");
 const toast = document.getElementById("toast");
+const modeIndicator = document.getElementById("modeIndicator");
+const deviceNameDisplay = document.getElementById("deviceNameDisplay");
+const discoverBtn = document.getElementById("discoverBtn");
+const addWorkerBtn = document.getElementById("addWorkerBtn");
+const manualIP = document.getElementById("manualIP");
+const manualName = document.getElementById("manualName");
+const myIP = document.getElementById("myIP");
+
+// ========================================
+// CHECK SESSION
+// ========================================
+async function checkSession() {
+  try {
+    const response = await fetch("/session");
+    const data = await response.json();
+
+    isLoggedIn = data.isLoggedIn;
+    currentMode = data.mode;
+
+    updateModeUI();
+
+    if (!isLoggedIn) {
+      window.location.href = "/";
+      return;
+    }
+
+    await loadWorkers();
+    await getMyIP();
+  } catch (error) {
+    console.error("Error checking session:", error);
+    showToast("Gagal memeriksa session", "error");
+  }
+}
+
+// ========================================
+// GET MY IP
+// ========================================
+async function getMyIP() {
+  try {
+    const response = await fetch("/status");
+    const data = await response.json();
+    if (data.ips && data.ips.length > 0) {
+      myIP.textContent = data.ips.join(", ");
+    }
+  } catch (error) {
+    console.error("Error getting IP:", error);
+  }
+}
+
+// ========================================
+// UPDATE MODE UI
+// ========================================
+function updateModeUI() {
+  if (modeIndicator) {
+    if (currentMode === "controller") {
+      modeIndicator.textContent = "🎮 CONTROLLER";
+      modeIndicator.className = "mode-indicator controller";
+    } else {
+      modeIndicator.textContent = "⚙️ WORKER";
+      modeIndicator.className = "mode-indicator worker";
+    }
+  }
+
+  if (deviceNameDisplay) {
+    deviceNameDisplay.textContent = `Device: ${getDeviceNameFromStatus()}`;
+  }
+}
+
+async function getDeviceNameFromStatus() {
+  try {
+    const response = await fetch("/status");
+    const data = await response.json();
+    return data.device || "Unknown";
+  } catch {
+    return "Unknown";
+  }
+}
 
 // ========================================
 // LOAD WORKERS
@@ -28,6 +107,8 @@ async function loadWorkers() {
     if (data.success) {
       workers = data.workers;
       renderDeviceList();
+    } else if (data.message && data.message.includes("login")) {
+      window.location.href = "/";
     } else {
       showToast("Gagal memuat daftar perangkat", "error");
     }
@@ -47,17 +128,23 @@ function renderDeviceList() {
     deviceList.innerHTML = `
       <div class="no-devices">
         <p>📭 Belum ada perangkat yang terdaftar</p>
-        <small style="color: #999;">Pastikan perangkat worker sudah dijalankan dan terdaftar</small>
+        <small style="color: #999;">Klik "Scan Network" untuk mencari perangkat otomatis</small>
+        <br/>
+        <small style="color: #666; display: block; margin-top: 10px;">
+          atau tambahkan manual dengan IP address
+        </small>
       </div>
     `;
     updateSelectedCount();
     return;
   }
 
-  // Sort: online first
+  // Sort: online first, then manual, then discovered
   const sortedWorkers = [...workers].sort((a, b) => {
     if (a.status === "online" && b.status !== "online") return -1;
     if (a.status !== "online" && b.status === "online") return 1;
+    if (a.manual && !b.manual) return -1;
+    if (!a.manual && b.manual) return 1;
     return 0;
   });
 
@@ -66,31 +153,49 @@ function renderDeviceList() {
       (worker) => `
     <div class="device-item ${selectedWorkers.some((w) => w.id === worker.id) ? "selected" : ""}" data-id="${worker.id}">
       <div class="device-header">
-        <span class="device-name">${worker.name}</span>
+        <span class="device-name">
+          ${worker.manual ? "📌 " : "🔍 "}
+          ${worker.name}
+          ${worker.discovered ? ' <small style="color:#999;">(auto)</small>' : ""}
+          ${worker.manual ? ' <small style="color:#4285f4;">(manual)</small>' : ""}
+        </span>
         <span class="device-status ${worker.status}">${worker.status === "online" ? "🟢 Online" : "🔴 Offline"}</span>
       </div>
       <div class="device-ip">🌐 ${worker.ip}</div>
-      <div class="device-checkbox">
-        <input 
-          type="checkbox" 
-          id="worker_${worker.id}" 
-          ${selectedWorkers.some((w) => w.id === worker.id) ? "checked" : ""}
-          ${worker.status !== "online" ? "disabled" : ""}
-          data-id="${worker.id}"
-        />
-        <label for="worker_${worker.id}">Pilih perangkat ini</label>
+      <div class="device-actions">
+        <div class="device-checkbox">
+          <input 
+            type="checkbox" 
+            id="worker_${worker.id}" 
+            ${selectedWorkers.some((w) => w.id === worker.id) ? "checked" : ""}
+            ${worker.status !== "online" ? "disabled" : ""}
+            data-id="${worker.id}"
+          />
+          <label for="worker_${worker.id}">Pilih perangkat ini</label>
+        </div>
+        ${
+          worker.manual
+            ? `
+          <button class="btn-remove" data-id="${worker.id}">✕ Hapus</button>
+        `
+            : ""
+        }
       </div>
     </div>
   `,
     )
     .join("");
 
-  // Add event listeners to checkboxes
+  // Add event listeners
   document
     .querySelectorAll('.device-item input[type="checkbox"]')
     .forEach((checkbox) => {
       checkbox.addEventListener("change", handleDeviceSelect);
     });
+
+  document.querySelectorAll(".btn-remove").forEach((btn) => {
+    btn.addEventListener("click", handleRemoveWorker);
+  });
 
   updateSelectedCount();
 }
@@ -113,20 +218,20 @@ function handleDeviceSelect(e) {
     selectedWorkers = selectedWorkers.filter((w) => w.id !== deviceId);
   }
 
-  // Update UI
   updateSelectedCount();
   updateDeviceItems();
 
-  // Update select all
   const allCheckboxes = document.querySelectorAll(
     '.device-item input[type="checkbox"]:not(:disabled)',
   );
   const checkedCheckboxes = document.querySelectorAll(
     '.device-item input[type="checkbox"]:checked',
   );
-  selectAll.checked =
-    allCheckboxes.length > 0 &&
-    allCheckboxes.length === checkedCheckboxes.length;
+  if (selectAll) {
+    selectAll.checked =
+      allCheckboxes.length > 0 &&
+      allCheckboxes.length === checkedCheckboxes.length;
+  }
 }
 
 // ========================================
@@ -134,7 +239,9 @@ function handleDeviceSelect(e) {
 // ========================================
 function updateSelectedCount() {
   const count = selectedWorkers.length;
-  selectedCount.textContent = `${count} perangkat dipilih`;
+  if (selectedCount) {
+    selectedCount.textContent = `${count} perangkat dipilih`;
+  }
 }
 
 function updateDeviceItems() {
@@ -148,117 +255,227 @@ function updateDeviceItems() {
 // ========================================
 // SELECT ALL
 // ========================================
-selectAll.addEventListener("change", (e) => {
-  const checked = e.target.checked;
+if (selectAll) {
+  selectAll.addEventListener("change", (e) => {
+    const checked = e.target.checked;
+    const onlineWorkers = workers.filter((w) => w.status === "online");
 
-  // Select/deselect all online workers
-  const onlineWorkers = workers.filter((w) => w.status === "online");
+    if (checked) {
+      selectedWorkers = [...onlineWorkers];
+    } else {
+      selectedWorkers = [];
+    }
 
-  if (checked) {
-    selectedWorkers = [...onlineWorkers];
-  } else {
-    selectedWorkers = [];
-  }
+    document
+      .querySelectorAll('.device-item input[type="checkbox"]:not(:disabled)')
+      .forEach((checkbox) => {
+        checkbox.checked = checked;
+      });
 
-  // Update checkboxes
-  document
-    .querySelectorAll('.device-item input[type="checkbox"]:not(:disabled)')
-    .forEach((checkbox) => {
-      checkbox.checked = checked;
-    });
-
-  updateSelectedCount();
-  updateDeviceItems();
-});
+    updateSelectedCount();
+    updateDeviceItems();
+  });
+}
 
 // ========================================
-// EXECUTE COMMAND
+// DISCOVER WORKERS
 // ========================================
-executeBtn.addEventListener("click", async () => {
-  const jumlah = parseInt(jumlahAkun.value);
-  const url = targetUrl.value.trim();
+if (discoverBtn) {
+  discoverBtn.addEventListener("click", async () => {
+    discoverBtn.disabled = true;
+    discoverBtn.textContent = "⏳ Scanning...";
+    showToast("🔍 Mencari perangkat di jaringan...", "info");
 
-  // Validasi
-  if (!jumlah || jumlah < 1) {
-    showToast("❌ Masukkan jumlah akun yang valid", "error");
-    return;
-  }
+    try {
+      const response = await fetch("/discover", {
+        method: "POST",
+      });
+      const data = await response.json();
 
-  if (!url) {
-    showToast("❌ Masukkan URL tujuan", "error");
-    return;
-  }
+      if (data.success) {
+        workers = data.workers;
+        renderDeviceList();
+        showToast(`✅ ${data.message}`, "success");
+      } else {
+        showToast("❌ " + data.message, "error");
+      }
+    } catch (error) {
+      showToast("❌ Gagal melakukan discovery: " + error.message, "error");
+    } finally {
+      discoverBtn.disabled = false;
+      discoverBtn.textContent = "🔍 Scan Network";
+    }
+  });
+}
 
-  if (selectedWorkers.length === 0) {
-    showToast("❌ Pilih minimal 1 perangkat", "error");
-    return;
-  }
+// ========================================
+// ADD MANUAL WORKER
+// ========================================
+if (addWorkerBtn) {
+  addWorkerBtn.addEventListener("click", async () => {
+    const ip = manualIP.value.trim();
+    const name = manualName.value.trim() || ip;
 
-  // Format URL
-  let formattedUrl = url;
-  if (
-    !formattedUrl.startsWith("http://") &&
-    !formattedUrl.startsWith("https://")
-  ) {
-    formattedUrl = "https://" + formattedUrl;
-  }
+    if (!ip) {
+      showToast("❌ Masukkan IP Address", "error");
+      return;
+    }
 
-  // Disable button
-  executeBtn.disabled = true;
-  executeBtn.textContent = "⏳ Mengirim perintah...";
+    // Validasi IP sederhana
+    const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipPattern.test(ip)) {
+      showToast("❌ Format IP tidak valid", "error");
+      return;
+    }
 
-  // Clear previous results
-  resultContainer.style.display = "none";
+    try {
+      const response = await fetch("/add-worker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ip, name }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        workers = data.workers;
+        renderDeviceList();
+        manualIP.value = "";
+        manualName.value = "";
+        showToast(`✅ ${data.message}`, "success");
+      } else {
+        showToast("❌ " + data.message, "error");
+      }
+    } catch (error) {
+      showToast("❌ Gagal menambahkan worker: " + error.message, "error");
+    }
+  });
+
+  // Enter key support
+  manualIP.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      addWorkerBtn.click();
+    }
+  });
+  manualName.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      addWorkerBtn.click();
+    }
+  });
+}
+
+// ========================================
+// REMOVE WORKER
+// ========================================
+async function handleRemoveWorker(e) {
+  const id = e.target.dataset.id;
+
+  if (!confirm("Yakin ingin menghapus perangkat ini?")) return;
 
   try {
-    const response = await fetch("/control", {
+    const response = await fetch("/remove-worker", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        jumlah,
-        url: formattedUrl,
-        workers: selectedWorkers,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
     });
 
     const data = await response.json();
 
-    // Show results
-    showResults(data);
-
     if (data.success) {
-      showToast(
-        `✅ Berhasil: ${data.success_count} dari ${data.total} perangkat`,
-        "success",
-      );
+      workers = data.workers;
+      renderDeviceList();
+      showToast("✅ Perangkat berhasil dihapus", "success");
     } else {
-      showToast("⚠️ Terjadi kesalahan", "error");
+      showToast("❌ " + data.message, "error");
     }
   } catch (error) {
-    console.error("Error executing command:", error);
-    showToast("❌ Gagal mengirim perintah: " + error.message, "error");
-  } finally {
-    executeBtn.disabled = false;
-    executeBtn.textContent = "🚀 Kirim Perintah";
+    showToast("❌ Gagal menghapus: " + error.message, "error");
   }
-});
+}
+
+// ========================================
+// EXECUTE COMMAND
+// ========================================
+if (executeBtn) {
+  executeBtn.addEventListener("click", async () => {
+    const jumlah = parseInt(jumlahAkun.value);
+    const url = targetUrl.value.trim();
+
+    if (!jumlah || jumlah < 1) {
+      showToast("❌ Masukkan jumlah akun yang valid", "error");
+      return;
+    }
+
+    if (!url) {
+      showToast("❌ Masukkan URL tujuan", "error");
+      return;
+    }
+
+    if (selectedWorkers.length === 0) {
+      showToast("❌ Pilih minimal 1 perangkat", "error");
+      return;
+    }
+
+    let formattedUrl = url;
+    if (
+      !formattedUrl.startsWith("http://") &&
+      !formattedUrl.startsWith("https://")
+    ) {
+      formattedUrl = "https://" + formattedUrl;
+    }
+
+    executeBtn.disabled = true;
+    executeBtn.textContent = "⏳ Mengirim perintah...";
+    resultContainer.style.display = "none";
+
+    try {
+      const response = await fetch("/control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jumlah,
+          url: formattedUrl,
+          workers: selectedWorkers,
+        }),
+      });
+
+      const data = await response.json();
+      showResults(data);
+
+      if (data.success) {
+        showToast(
+          `✅ Berhasil: ${data.success_count} dari ${data.total} perangkat`,
+          "success",
+        );
+      } else {
+        showToast("⚠️ Terjadi kesalahan", "error");
+      }
+    } catch (error) {
+      console.error("Error executing command:", error);
+      showToast("❌ Gagal mengirim perintah: " + error.message, "error");
+    } finally {
+      executeBtn.disabled = false;
+      executeBtn.textContent = "🚀 Kirim Perintah";
+    }
+  });
+}
 
 // ========================================
 // SHOW RESULTS
 // ========================================
 function showResults(data) {
+  if (!resultContainer) return;
+
   resultContainer.style.display = "block";
 
-  // Summary
-  resultSummary.innerHTML = `
-    <span class="result-stat success">✅ Berhasil: ${data.success_count}</span>
-    <span class="result-stat error">❌ Gagal: ${data.error_count}</span>
-    <span class="result-stat" style="background:#e0e0e0;color:#333;">📊 Total: ${data.total}</span>
-  `;
+  if (resultSummary) {
+    resultSummary.innerHTML = `
+      <span class="result-stat success">✅ Berhasil: ${data.success_count}</span>
+      <span class="result-stat error">❌ Gagal: ${data.error_count}</span>
+      <span class="result-stat" style="background:#e0e0e0;color:#333;">📊 Total: ${data.total}</span>
+    `;
+  }
 
-  // Detail
   let detailHTML = "";
 
   if (data.results && data.results.length > 0) {
@@ -287,29 +504,41 @@ function showResults(data) {
       .join("");
   }
 
-  resultDetail.innerHTML =
-    detailHTML || '<p style="color:#999;">Tidak ada detail</p>';
+  if (resultDetail) {
+    resultDetail.innerHTML =
+      detailHTML || '<p style="color:#999;">Tidak ada detail</p>';
+  }
 }
 
 // ========================================
 // LOGOUT
 // ========================================
-logoutBtn.addEventListener("click", async () => {
-  if (confirm("Yakin ingin logout?")) {
-    try {
-      await fetch("/logout", { method: "POST" });
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Logout error:", error);
-      window.location.href = "/";
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    if (confirm("Yakin ingin logout? Perangkat akan kembali menjadi Worker.")) {
+      try {
+        const response = await fetch("/logout", { method: "POST" });
+        const data = await response.json();
+
+        showToast("✅ " + data.message, "success");
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1500);
+      } catch (error) {
+        console.error("Logout error:", error);
+        window.location.href = "/";
+      }
     }
-  }
-});
+  });
+}
 
 // ========================================
 // TOAST NOTIFICATION
 // ========================================
 function showToast(message, type = "info") {
+  if (!toast) return;
+
   toast.textContent = message;
   toast.className = `toast ${type}`;
   toast.classList.add("show");
@@ -323,21 +552,15 @@ function showToast(message, type = "info") {
 // ========================================
 // AUTO REFRESH
 // ========================================
-// Refresh worker list every 10 seconds
-setInterval(loadWorkers, 10000);
+setInterval(() => {
+  if (isLoggedIn) {
+    loadWorkers();
+  }
+}, 15000);
 
 // ========================================
 // INIT
 // ========================================
-document.addEventListener("DOMContentLoaded", () => {
-  loadWorkers();
-
-  // Set default device name
-  fetch("/status")
-    .then((res) => res.json())
-    .then((data) => {
-      document.getElementById("controllerName").textContent =
-        data.device || "Unknown";
-    })
-    .catch(console.error);
+document.addEventListener("DOMContentLoaded", async () => {
+  await checkSession();
 });

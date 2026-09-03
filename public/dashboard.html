@@ -12,12 +12,27 @@
       <div class="dashboard-header">
         <div class="header-left">
           <h1>🎮 Dashboard</h1>
-          <span class="device-info"
-            >Controller: <span id="controllerName">Loading...</span></span
+          <span class="device-info" id="deviceNameDisplay"
+            >Device: Loading...</span
           >
+          <span class="mode-indicator" id="modeIndicator">⚙️ WORKER</span>
         </div>
         <div class="header-right">
           <button id="logoutBtn" class="btn-logout">🚪 Logout</button>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="status-item">
+          <span class="status-label">Status:</span>
+          <span id="connectionStatus" class="status-value online"
+            >🟢 Terhubung</span
+          >
+        </div>
+        <div class="status-item">
+          <span class="status-label">IP Anda:</span>
+          <span id="myIP" class="status-value">Loading...</span>
         </div>
       </div>
 
@@ -28,6 +43,9 @@
           <div class="section-header">
             <h2>📱 Perangkat Tersedia</h2>
             <div class="select-actions">
+              <button id="discoverBtn" class="btn-discover">
+                🔍 Scan Network
+              </button>
               <label class="checkbox-label">
                 <input type="checkbox" id="selectAll" />
                 <span>Select All</span>
@@ -40,6 +58,24 @@
 
           <div id="deviceList" class="device-list">
             <div class="loading">Memuat daftar perangkat...</div>
+          </div>
+
+          <!-- Manual Add -->
+          <div class="manual-add">
+            <h3>➕ Tambah Perangkat Manual</h3>
+            <div class="manual-form">
+              <input
+                type="text"
+                id="manualIP"
+                placeholder="IP Address (contoh: 192.168.1.100)"
+              />
+              <input
+                type="text"
+                id="manualName"
+                placeholder="Nama Perangkat (opsional)"
+              />
+              <button id="addWorkerBtn" class="btn-add">Tambah</button>
+            </div>
           </div>
         </div>
 

@@ -470,3 +470,265 @@ body {
 .device-item {
   animation: fadeIn 0.3s ease-out;
 }
+
+/* Tambahan untuk mode indicator */
+.mode-indicator {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 13px;
+  background: #f0f0f0;
+}
+
+.mode-indicator.controller {
+  background: #d4edda;
+  color: #155724;
+}
+
+.mode-indicator.worker {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Status Bar */
+.status-bar {
+  background: white;
+  padding: 12px 40px;
+  display: flex;
+  gap: 30px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.status-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.status-value {
+  font-weight: 600;
+}
+
+.status-value.online {
+  color: #28a745;
+}
+
+.status-value.offline {
+  color: #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .status-bar {
+    padding: 10px 20px;
+    gap: 15px;
+  }
+
+  .mode-indicator {
+    font-size: 11px;
+    padding: 2px 10px;
+  }
+}
+
+/* Tambahan di style.css untuk login page */
+.mode-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.mode-badge.worker {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.mode-badge.controller {
+  background: #d4edda;
+  color: #155724;
+}
+
+.device-mode-info {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+/* Tambahan untuk dashboard */
+
+/* Device Actions */
+.device-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.btn-remove {
+  padding: 4px 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.3s;
+}
+
+.btn-remove:hover {
+  background: #c82333;
+}
+
+/* Manual Add Section */
+.manual-add {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px dashed #dee2e6;
+}
+
+.manual-add h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.manual-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.manual-form input {
+  flex: 1;
+  min-width: 150px;
+  padding: 10px;
+  border: 2px solid #dee2e6;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.manual-form input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.btn-add {
+  padding: 10px 25px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.btn-add:hover {
+  background: #218838;
+}
+
+.btn-discover {
+  padding: 8px 18px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.btn-discover:hover {
+  background: #138496;
+}
+
+.btn-discover:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Status Bar */
+.status-bar {
+  background: white;
+  padding: 12px 40px;
+  display: flex;
+  gap: 30px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.status-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.status-value {
+  font-weight: 600;
+}
+
+.status-value.online {
+  color: #28a745;
+}
+
+.status-value.offline {
+  color: #dc3545;
+}
+
+/* Mode Indicator */
+.mode-indicator {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.mode-indicator.controller {
+  background: #d4edda;
+  color: #155724;
+}
+
+.mode-indicator.worker {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .status-bar {
+    padding: 10px 20px;
+    gap: 15px;
+  }
+
+  .manual-form {
+    flex-direction: column;
+  }
+
+  .manual-form input {
+    min-width: 100%;
+  }
+
+  .btn-add {
+    width: 100%;
+  }
+}
