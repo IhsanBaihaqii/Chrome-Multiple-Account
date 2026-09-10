@@ -1,16 +1,11 @@
 {
-  "name": "chrome-multi-remote",
+  "name": "chrome-remote-control",
   "version": "1.0.0",
-  "description": "Remote control multi-account Chrome launcher",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
+    "express": "^4.19.2"
   }
 }

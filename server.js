@@ -1,32 +1,22 @@
+// server.js
 const express = require("express");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
-const dgram = require("dgram");
 const http = require("http");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// ========================================
+// MIDDLEWARE
+// ========================================
 app.use(express.json());
-app.use(express.static("public"));
 
 // ========================================
-// DATA STATIS
+// DATA WORKERS
 // ========================================
-const VALID_USERNAME = "admin";
-const VALID_PASSWORD = "admin123";
-
-// Session sederhana (in-memory)
-let activeSession = {
-  isLoggedIn: false,
-  username: null,
-  loginTime: null,
-};
-
-// Daftar perangkat worker (discovered + manual)
 let discoveredWorkers = [];
 let manualWorkers = [];
 
@@ -37,6 +27,7 @@ let config = {
   mode: "worker",
   deviceName: os.hostname(),
   manualWorkers: [],
+  discoveredWorkers: [],
 };
 
 // Load config
@@ -45,6 +36,7 @@ try {
     const savedConfig = JSON.parse(fs.readFileSync("config.json", "utf8"));
     config = { ...config, ...savedConfig };
     manualWorkers = config.manualWorkers || [];
+    discoveredWorkers = config.discoveredWorkers || [];
   }
 } catch (err) {
   console.log("Config tidak ditemukan, menggunakan default");
@@ -101,24 +93,31 @@ function getLocalIPs() {
 }
 
 // ========================================
-// AUTO DISCOVERY - PING WORKERS
+// SAVE CONFIG
+// ========================================
+function saveConfig() {
+  config.manualWorkers = manualWorkers;
+  config.discoveredWorkers = discoveredWorkers;
+  try {
+    fs.writeFileSync("config.json", JSON.stringify(config, null, 2));
+  } catch (err) {
+    console.error("Gagal menyimpan config:", err.message);
+  }
+}
+
+// ========================================
+// AUTO DISCOVERY
 // ========================================
 async function discoverWorkers() {
   const localIPs = getLocalIPs();
   const discovered = [];
 
   for (const localIP of localIPs) {
-    // Ambil subnet (192.168.1.x)
     const subnet = localIP.substring(0, localIP.lastIndexOf("."));
-
-    // Scan IP range (1-254) - tapi hanya beberapa untuk efisiensi
-    // Kita scan IP yang umum digunakan
     const commonIPs = [1, 2, 5, 10, 20, 50, 100, 150, 200, 250];
 
     for (const lastOctet of commonIPs) {
       const targetIP = `${subnet}.${lastOctet}`;
-
-      // Skip IP sendiri
       if (targetIP === localIP) continue;
 
       try {
@@ -137,7 +136,7 @@ async function discoverWorkers() {
           );
         }
       } catch (error) {
-        // Skip jika timeout
+        // Skip timeout
       }
     }
   }
@@ -150,8 +149,7 @@ async function discoverWorkers() {
 // ========================================
 function pingWorker(ip) {
   return new Promise((resolve) => {
-    const timeout = 2000; // 2 second timeout
-    const startTime = Date.now();
+    const timeout = 2000;
 
     const req = http.request(
       {
@@ -163,13 +161,10 @@ function pingWorker(ip) {
       },
       (res) => {
         let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
+        res.on("data", (chunk) => (data += chunk));
         res.on("end", () => {
           try {
-            const json = JSON.parse(data);
-            resolve(json);
+            resolve(JSON.parse(data));
           } catch {
             resolve(null);
           }
@@ -177,21 +172,29 @@ function pingWorker(ip) {
       },
     );
 
-    req.on("error", () => {
-      resolve(null);
-    });
-
+    req.on("error", () => resolve(null));
     req.on("timeout", () => {
       req.destroy();
       resolve(null);
     });
-
     req.end();
   });
 }
 
 // ========================================
-// ENDPOINT PING (untuk discovery)
+// GET ALL WORKERS
+// ========================================
+function getAllWorkers() {
+  const all = [...manualWorkers];
+  for (const discovered of discoveredWorkers) {
+    const exists = all.some((w) => w.ip === discovered.ip);
+    if (!exists) all.push(discovered);
+  }
+  return all;
+}
+
+// ========================================
+// ENDPOINT: PING (untuk discovery)
 // ========================================
 app.get("/ping", (req, res) => {
   res.json({
@@ -203,71 +206,24 @@ app.get("/ping", (req, res) => {
 });
 
 // ========================================
-// ENDPOINT LOGIN
+// ENDPOINT: SET MODE (ganti worker/controller manual)
 // ========================================
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-
-  if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-    activeSession.isLoggedIn = true;
-    activeSession.username = username;
-    activeSession.loginTime = new Date().toISOString();
-
-    config.mode = "controller";
-    saveConfig();
-
-    console.log(
-      `🔐 User "${username}" login - Mode berubah menjadi CONTROLLER`,
-    );
-
-    res.json({
-      success: true,
-      message: "Login berhasil",
-      redirect: "/dashboard.html",
-      mode: "controller",
-    });
-  } else {
-    res.status(401).json({
+app.post("/mode", (req, res) => {
+  const { mode } = req.body;
+  if (!["worker", "controller"].includes(mode)) {
+    return res.status(400).json({
       success: false,
-      message: "Username atau password salah",
+      message: "Mode harus 'worker' atau 'controller'",
     });
   }
-});
-
-// ========================================
-// ENDPOINT LOGOUT
-// ========================================
-app.post("/logout", (req, res) => {
-  activeSession.isLoggedIn = false;
-  activeSession.username = null;
-  activeSession.loginTime = null;
-
-  config.mode = "worker";
+  config.mode = mode;
   saveConfig();
-
-  console.log(`🚪 User logout - Mode berubah menjadi WORKER`);
-
-  res.json({
-    success: true,
-    message: "Logout berhasil",
-    mode: "worker",
-  });
+  console.log(`🔧 Mode diubah menjadi: ${mode.toUpperCase()}`);
+  res.json({ success: true, mode });
 });
 
 // ========================================
-// ENDPOINT CEK SESSION
-// ========================================
-app.get("/session", (req, res) => {
-  res.json({
-    isLoggedIn: activeSession.isLoggedIn,
-    username: activeSession.username,
-    mode: config.mode,
-    deviceName: config.deviceName,
-  });
-});
-
-// ========================================
-// ENDPOINT TAMBAH WORKER MANUAL
+// ENDPOINT: TAMBAH WORKER MANUAL
 // ========================================
 app.post("/add-worker", (req, res) => {
   const { ip, name } = req.body;
@@ -279,7 +235,6 @@ app.post("/add-worker", (req, res) => {
     });
   }
 
-  // Cek apakah sudah ada
   const existing = manualWorkers.find((w) => w.ip === ip);
   if (!existing) {
     manualWorkers.push({
@@ -290,12 +245,12 @@ app.post("/add-worker", (req, res) => {
       lastSeen: new Date().toISOString(),
       manual: true,
     });
-    saveConfig();
   } else {
     existing.status = "online";
     existing.lastSeen = new Date().toISOString();
-    saveConfig();
   }
+
+  saveConfig();
 
   res.json({
     success: true,
@@ -305,11 +260,10 @@ app.post("/add-worker", (req, res) => {
 });
 
 // ========================================
-// ENDPOINT HAPUS WORKER
+// ENDPOINT: HAPUS WORKER
 // ========================================
 app.post("/remove-worker", (req, res) => {
   const { id } = req.body;
-
   manualWorkers = manualWorkers.filter((w) => w.id !== id);
   saveConfig();
 
@@ -321,17 +275,9 @@ app.post("/remove-worker", (req, res) => {
 });
 
 // ========================================
-// ENDPOINT GET WORKERS
+// ENDPOINT: GET WORKERS
 // ========================================
 app.get("/workers", async (req, res) => {
-  if (!activeSession.isLoggedIn) {
-    return res.status(403).json({
-      success: false,
-      message: "Akses ditolak. Silakan login terlebih dahulu.",
-    });
-  }
-
-  // Gabungkan discovered + manual
   const allWorkers = getAllWorkers();
 
   // Update status untuk discovered workers
@@ -354,24 +300,7 @@ app.get("/workers", async (req, res) => {
 });
 
 // ========================================
-// GET ALL WORKERS
-// ========================================
-function getAllWorkers() {
-  // Gabungkan manual dan discovered, tanpa duplikat
-  const all = [...manualWorkers];
-
-  for (const discovered of discoveredWorkers) {
-    const exists = all.some((w) => w.ip === discovered.ip);
-    if (!exists) {
-      all.push(discovered);
-    }
-  }
-
-  return all;
-}
-
-// ========================================
-// ENDPOINT UNTUK WORKER (MENERIMA PERINTAH)
+// ENDPOINT: EXECUTE (untuk worker menerima perintah)
 // ========================================
 app.post("/execute", (req, res) => {
   const { jumlah, url } = req.body;
@@ -425,16 +354,9 @@ app.post("/execute", (req, res) => {
 });
 
 // ========================================
-// ENDPOINT KONTROL
+// ENDPOINT: CONTROL (kirim perintah ke workers)
 // ========================================
 app.post("/control", async (req, res) => {
-  if (!activeSession.isLoggedIn) {
-    return res.status(403).json({
-      success: false,
-      message: "Akses ditolak. Silakan login terlebih dahulu.",
-    });
-  }
-
   const { jumlah, url, workers } = req.body;
 
   if (!jumlah || !url || !workers || workers.length === 0) {
@@ -493,16 +415,9 @@ app.post("/control", async (req, res) => {
 });
 
 // ========================================
-// ENDPOINT DISCOVER
+// ENDPOINT: DISCOVER
 // ========================================
 app.post("/discover", async (req, res) => {
-  if (!activeSession.isLoggedIn) {
-    return res.status(403).json({
-      success: false,
-      message: "Akses ditolak. Silakan login terlebih dahulu.",
-    });
-  }
-
   try {
     const discovered = await discoverWorkers();
     discoveredWorkers = discovered;
@@ -522,13 +437,12 @@ app.post("/discover", async (req, res) => {
 });
 
 // ========================================
-// ENDPOINT STATUS
+// ENDPOINT: STATUS
 // ========================================
 app.get("/status", (req, res) => {
   res.json({
     device: config.deviceName,
     mode: config.mode,
-    isLoggedIn: activeSession.isLoggedIn,
     platform: process.platform,
     chrome: findChrome() ? "Tersedia" : "Tidak ditemukan",
     workersCount: getAllWorkers().length,
@@ -537,13 +451,9 @@ app.get("/status", (req, res) => {
 });
 
 // ========================================
-// FUNGSI BANTUAN
+// STATIC FILES
 // ========================================
-function saveConfig() {
-  config.manualWorkers = manualWorkers;
-  config.discoveredWorkers = discoveredWorkers;
-  fs.writeFileSync("config.json", JSON.stringify(config, null, 2));
-}
+app.use(express.static("public"));
 
 // ========================================
 // START SERVER
@@ -559,12 +469,4 @@ app.listen(PORT, async () => {
   console.log(`🌐 IP Address:`);
   ips.forEach((ip) => console.log(`   - http://${ip}:${PORT}`));
   console.log(`========================================\n`);
-
-  if (config.mode === "worker") {
-    console.log(`🔄 Perangkat berjalan sebagai WORKER`);
-    console.log(`💡 Login untuk menjadi CONTROLLER\n`);
-  } else {
-    console.log(`🎮 Perangkat berjalan sebagai CONTROLLER`);
-    console.log(`💡 Logout untuk kembali menjadi WORKER\n`);
-  }
 });

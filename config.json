@@ -1,6 +1,15 @@
 {
   "mode": "controller",
-  "deviceName": "LAPTOP-HLIO8FRC",
-  "controllerIP": "",
+  "deviceName": "LAPTOP-ANDA",
+  "manualWorkers": [
+    {
+      "id": "manual-1789034019027",
+      "name": "Laptop",
+      "ip": "192.168.56.1",
+      "status": "online",
+      "lastSeen": "2026-09-10T09:53:39.028Z",
+      "manual": true
+    }
+  ],
   "discoveredWorkers": []
 }
