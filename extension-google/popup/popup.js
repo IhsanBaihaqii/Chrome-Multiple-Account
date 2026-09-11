@@ -1,31 +1,39 @@
-import { getConfig, getOrCreateDeviceId } from "../lib/device.js";
+async function loadStatus() {
+  const data = await chrome.runtime.sendMessage({
+    type: "GET_STATUS",
+  });
 
-async function load() {
-  const config = await getConfig();
-  const id = await getOrCreateDeviceId();
+  if (!data?.success) {
+    document.getElementById("status").textContent = data?.error || "Error";
 
-  document.getElementById("device").textContent = config.deviceName || "-";
-  document.getElementById("profile").textContent = config.profileName || "-";
-  document.getElementById("lastSync").textContent = config.lastSync || "-";
-  document.getElementById("deviceId").textContent = "ID: " + id;
-}
-
-document.getElementById("syncBtn").addEventListener("click", async () => {
-  const status = document.getElementById("status");
-  status.textContent = "Sync...";
-  status.className = "row";
-
-  const result = await chrome.runtime.sendMessage({ type: "SYNC_NOW" });
-
-  if (result?.success) {
-    status.textContent = `Berhasil. Command: ${result.commands || 0}`;
-    status.className = "row ok";
-  } else {
-    status.textContent = result?.error || "Gagal";
-    status.className = "row bad";
+    return;
   }
 
-  await load();
+  document.getElementById("deviceName").textContent = data.deviceName;
+
+  document.getElementById("deviceId").textContent = data.deviceId;
+
+  document.getElementById("lastSync").textContent =
+    data.lastSync || "Belum sync";
+
+  document.getElementById("status").textContent = "Connected";
+}
+
+document.getElementById("sync").addEventListener("click", async () => {
+  document.getElementById("status").textContent = "Sync...";
+
+  const result = await chrome.runtime.sendMessage({
+    type: "SYNC_NOW",
+  });
+
+  if (result?.success) {
+    document.getElementById("status").textContent = "Connected";
+
+    await loadStatus();
+  } else {
+    document.getElementById("status").textContent =
+      result?.error || "Sync gagal";
+  }
 });
 
-load();
+loadStatus();

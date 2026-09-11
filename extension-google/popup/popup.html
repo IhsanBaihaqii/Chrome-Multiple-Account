@@ -1,27 +1,78 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Remote Worker</title>
-  <style>
-    body { width: 300px; font-family: Arial, sans-serif; padding: 14px; }
-    h3 { margin: 0 0 12px; }
-    .row { margin: 8px 0; }
-    .muted { color: #666; font-size: 12px; word-break: break-all; }
-    button { width: 100%; padding: 10px; cursor: pointer; }
-    .ok { color: green; }
-    .bad { color: #b00020; }
-  </style>
-</head>
-<body>
-  <h3>Remote Chrome Worker</h3>
-  <div class="row"><b>Device:</b> <span id="device">-</span></div>
-  <div class="row"><b>Profile:</b> <span id="profile">-</span></div>
-  <div class="row"><b>Last sync:</b> <span id="lastSync">-</span></div>
-  <div class="row muted" id="deviceId"></div>
-  <button id="syncBtn">Sync sekarang</button>
-  <div class="row" id="status"></div>
-  <p><a href="../options/options.html" target="_blank">Buka pengaturan</a></p>
-  <script type="module" src="popup.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>Remote Worker</title>
+
+    <style>
+      body {
+        width: 280px;
+        padding: 16px;
+        font-family: Arial, sans-serif;
+      }
+
+      h3 {
+        margin-top: 0;
+      }
+
+      .item {
+        margin-bottom: 10px;
+      }
+
+      .label {
+        font-size: 11px;
+        color: #777;
+      }
+
+      .value {
+        margin-top: 3px;
+        font-size: 13px;
+        word-break: break-all;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        cursor: pointer;
+      }
+
+      .online {
+        color: green;
+      }
+
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h3>Remote Worker</h3>
+
+    <div class="item">
+      <div class="label">Worker</div>
+
+      <div class="value" id="deviceName">-</div>
+    </div>
+
+    <div class="item">
+      <div class="label">Worker ID</div>
+
+      <div class="value" id="deviceId">-</div>
+    </div>
+
+    <div class="item">
+      <div class="label">Last Sync</div>
+
+      <div class="value" id="lastSync">-</div>
+    </div>
+
+    <div id="status" class="value"></div>
+
+    <button id="sync">Sync Sekarang</button>
+
+    <script src="popup.js"></script>
+  </body>
 </html>

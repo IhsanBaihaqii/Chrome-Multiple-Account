@@ -1,18 +1,23 @@
 export async function apiRequest(apiUrl, payload) {
-  const res = await fetch(apiUrl, {
+  const response = await fetch(apiUrl, {
     method: "POST",
+
     headers: {
-      "Content-Type": "text/plain;charset=utf-8"
+      "Content-Type": "text/plain;charset=utf-8",
     },
+
     body: JSON.stringify(payload),
-    redirect: "follow"
+
+    redirect: "follow",
   });
 
-  const text = await res.text();
+  const text = await response.text();
 
   try {
     return JSON.parse(text);
-  } catch {
-    throw new Error("Response Apps Script bukan JSON valid: " + text.slice(0, 200));
+  } catch (error) {
+    console.error(text);
+
+    throw new Error("Response Apps Script bukan JSON valid.");
   }
 }
